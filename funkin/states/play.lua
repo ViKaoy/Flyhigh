@@ -72,7 +72,6 @@ function PlayState:enter()
 
 	self.skipConductor = false
 
-	Note.defaultSustainSegments = 3
 	NoteModifier.reset()
 
 	self.timer = TimerManager()
@@ -852,6 +851,7 @@ function PlayState:miss(note, dir)
 	if not event.cancelled and (ghostMiss or not note.tooLate) then
 		if not ghostMiss then
 			note.tooLate = true
+			note.killTime = 1
 		end
 
 		if event.muteVocals and notefield.vocals then notefield.vocals:setVolume(0) end

@@ -17,6 +17,7 @@ Notefield.safeZoneOffset = 1 / 6
 
 function Notefield:new(x, y, keys, skin, character, vocals, speed)
 	Notefield.super.new(self, x, y)
+	Note.defaultSustainSegments = 3
 
 	self.noteWidth = (160 * 0.7)
 	self.height = 514
@@ -239,7 +240,9 @@ function Notefield:update(dt)
 		self.character.waitReleaseAfterSing = not self.bot
 	end
 
-	self.time, self.beat = time, PlayState.conductor.currentBeatFloat
+	if PlayState.conductor.time < 0 or game.sound.music:isPlaying() then
+		self.time, self.beat = time, PlayState.conductor.currentBeatFloat
+	end
 
 	local isPlayer, sustainHitOffset, noSustainHit, sustainTime,
 	noteTime, lastPress, dir, fullyHeld, char, input, resetVolume =

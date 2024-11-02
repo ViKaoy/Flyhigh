@@ -40,3 +40,7 @@ luac.out
 assets
 mods
 release
+
+.editorconfig
+.nomedia
+.gitignore
