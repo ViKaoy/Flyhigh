@@ -922,17 +922,14 @@ end
 function PlayState:tryGameOver()
 	local event = self.scripts:event("onGameOver", Events.GameOver())
 	if not event.cancelled then
-		if event.pauseSong then
-			self:pauseSong()
-		end
+
+		if event.pauseSong then self:pauseSong() end
 		self.paused = event.pauseGame
 
 		self.camHUD.visible, self.camNotes.visible = false, false
 		self.boyfriend.visible = false
 
-		if self.buttons then
-			self:remove(self.buttons)
-		end
+		if self.buttons then self:remove(self.buttons) end
 
 		GameOverSubstate.characterName = event.characterName
 		GameOverSubstate.deathSoundName = event.deathSoundName
@@ -963,6 +960,7 @@ function PlayState:getKeyFromEvent(type, key)
 			return "pause"
 		end
 	end
+	return -1
 end
 
 function PlayState:onKeyPress(key, t, a, b, time)

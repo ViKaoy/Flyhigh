@@ -1,19 +1,20 @@
 return {
 	DEBUG_MODE = true,
 
-	title = "4KBrones",
-	file = "FNF-LOVE.4KBRONES",
+	title = "Flynight",
+	file = "FNF-LOVE.FLYNIGHT",
 	icon = "art/icon.png",
+
 	version = "0.7.1",
-	package = "dev.friends.4k",
+	FNversion = "0.0.1 WIP",
+
+	package = "dev.flynight",
 	width = 1280,
 	height = 720,
 	FPS = 60,
-	company = "Stilic",
+	company = "Kaoy",
 
 	flags = {
-		checkForUpdates = false,
-
 		loxelInitialAutoPause = true,
 		loxelInitialParallelUpdate = true,
 		loxelInitialAsyncInput = false,
