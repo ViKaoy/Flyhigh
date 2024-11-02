@@ -1,0 +1,7 @@
+ModsState = require "funkin.states.mods"
+TitleState = require "funkin.states.title"
+MainMenuState = require "funkin.states.mainmenu"
+CreditsState = require "funkin.states.credits"
+StoryMenuState = require "funkin.states.storymenu"
+FreeplayState = require "funkin.states.freeplay"
+PlayState = require "funkin.states.play"

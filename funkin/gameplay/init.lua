@@ -1,0 +1,5 @@
+Notefield = require "funkin.gameplay.notefield"
+Character = require "funkin.gameplay.character"
+Stage = require "funkin.gameplay.stage"
+Video = require "funkin.gameplay.video"
+Cutscene = require "funkin.gameplay.cutscene"
