@@ -44,7 +44,6 @@ end
 -- Throttle
 Throttle.list = {}
 function Throttle:make(inputs, step, delay)
-	--checktype(2, inputs, 2, "Throttle.make", "table")
 	return ThrottleObject.new(setmetatable(table.remove(dead) or {}, ThrottleObject),
 		inputs, step or (1 / 18), delay or 0.5)
 end
