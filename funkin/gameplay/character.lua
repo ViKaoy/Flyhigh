@@ -1,4 +1,5 @@
 local Character = Sprite:extend("Character")
+Character.sustainAnim = false
 
 Character.directions = {"left", "down", "up", "right"}
 Character.editorMode = false
@@ -140,7 +141,7 @@ function Character:switchAnim(oldAnim, newAnim)
 end
 
 function Character:update(dt)
-	if self.isOnSustain then
+	if Character.sustainAnim and self.isOnSustain then
 		if self._time <= 0 then
 			self._time = self._loopTime
 			self:playAnim(self.curAnim.name, true)
