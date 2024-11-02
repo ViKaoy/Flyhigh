@@ -61,9 +61,9 @@ function Stage:new(name)
 				set(self.dadCam, "y", json.dad.camera_offsets[2])
 			end
 
-			if json.camera_zoom then
-				self.camZoom = json.camera_zoom
-			end
+			set(self, "camZoom", json.camera_zoom)
+			set(self, "camSpeed", json.camera_speed)
+			set(self, "camZoomSpeed", json.camera_zoom_speed)
 		end
 
 		self.script:call("create")

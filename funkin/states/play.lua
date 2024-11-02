@@ -668,8 +668,8 @@ function PlayState:update(dt)
 	PlayState.super.update(self, dt)
 
 	if self.camZooming then
-		game.camera.zoom = util.coolLerp(game.camera.zoom, self.camZoom, 8, dt * self.camZoomSpeed)
-		self.camHUD.zoom = util.coolLerp(self.camHUD.zoom, 1, 8, dt * self.camZoomSpeed)
+		game.camera.zoom = util.coolLerp(game.camera.zoom, self.camZoom, 6, dt * self.camZoomSpeed)
+		self.camHUD.zoom = util.coolLerp(self.camHUD.zoom, 1, 6, dt * self.camZoomSpeed)
 	end
 	self.camNotes.zoom = self.camHUD.zoom
 
