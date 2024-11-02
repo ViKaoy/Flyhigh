@@ -609,6 +609,7 @@ function PlayState:executeEvent(event)
 	for _, s in pairs(self.eventScripts) do
 		if s.belongsTo == event.e then s:call("event", event) end
 	end
+	self.scripts:call("onEvent", event.e, event.v)
 end
 
 function PlayState:doCountdown(beat)
@@ -672,8 +673,8 @@ function PlayState:update(dt)
 	PlayState.super.update(self, dt)
 
 	if self.camZooming then
-		game.camera.zoom = util.coolLerp(game.camera.zoom, self.camZoom, 3, dt * self.camZoomSpeed)
-		self.camHUD.zoom = util.coolLerp(self.camHUD.zoom, 1, 3, dt * self.camZoomSpeed)
+		game.camera.zoom = util.coolLerp(game.camera.zoom, self.camZoom, 8, dt * self.camZoomSpeed)
+		self.camHUD.zoom = util.coolLerp(self.camHUD.zoom, 1, 8, dt * self.camZoomSpeed)
 	end
 	self.camNotes.zoom = self.camHUD.zoom
 
