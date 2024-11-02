@@ -1,5 +1,5 @@
 local Character = Sprite:extend("Character")
-Character.sustainAnim = false
+Character.sustainAnim = true
 
 Character.directions = {"left", "down", "up", "right"}
 Character.editorMode = false

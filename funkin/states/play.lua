@@ -641,7 +641,7 @@ function PlayState:update(dt)
 			self:playSong(0)
 			self:section(0)
 			self.scripts:call("songStart")
-		elseif game.sound.music:isPlaying() then
+		else
 			local noFocus, events, e = true, self.events
 			while events[1] do
 				e = events[1]
