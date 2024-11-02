@@ -41,6 +41,6 @@ assets
 mods
 release
 
-.editorconfig
-.nomedia
-.gitignore
+*.editorconfig
+*.nomedia
+*.gitignore
