@@ -159,11 +159,6 @@ function PlayState:enter()
 		self.scripts:add(self.boyfriend.script)
 	end
 
-	if self.gf and PlayState.SONG.player2:startsWith("gf") then
-		self.gf.visible = false
-		self.dad:setPosition(self.gf.x, self.gf.y)
-	end
-
 	self:add(self.stage.foreground)
 
 	self.judgeSprites = Judgements(game.width / 3, 264, PlayState.SONG.skin)
