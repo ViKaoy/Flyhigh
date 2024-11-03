@@ -1,0 +1,19 @@
+{
+	"animations": [
+		["singLEFT", "LEFT", [], 24, false, [25, 8]],
+		["singDOWN", "DOWN", [], 24, false, [10, -31]],
+		["singDOWN-end", "IDLE", [], 12, false, [10, -31]],
+		["singUP", "UP", [], 24, false, [-6, 50]],
+		["singRIGHT", "RIGHT", [], 24, false, [2, -6]],
+		["idle", "IDLE", [], 24, false, [10, 0]]
+	],
+	"position": [90, 300],
+	"camera_points": [80, 70],
+	"flip_x": true,
+	"icon": "boyf",
+	"sprite": "characters/boyfrind",
+	"antialiasing": true,
+	"sing_duration": 4,
+	"dance_speed": 3,
+	"scale": 1
+}
