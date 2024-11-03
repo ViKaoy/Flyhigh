@@ -6,4 +6,4 @@ Friday Night Funkin' engine made using [FNF Löve](https://github.com/Stilic/FNF
 
 Please refer to the FNF Löve repository for more info.
 
-## (!) This engine supports mods but it's made for compiled mods in mind.
+### (!) This engine supports softcoded mods but it's made for compiled mods in mind.
