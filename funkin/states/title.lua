@@ -37,11 +37,12 @@ function TitleState:enter()
 	}, nil, 24, false)
 	self.gfDance:play("danceRight")
 
-	self.logoBl = Sprite(-150, -100)
+	self.logoBl = Sprite(-200, -50)
 	self.logoBl:setFrames(paths.getSparrowAtlas("menus/title/logoBumpin"))
 	self.logoBl:addAnimByPrefix("bump", "logo bumpin", 24, false)
 	self.logoBl:play("bump")
 	self.logoBl:updateHitbox()
+	self.logoBl:setGraphicSize(self.logoBl.width * 0.74)
 
 	self.titleText = Sprite(0, 590)
 	self.titleText:setFrames(paths.getSparrowAtlas("menus/title/titleEnter"))

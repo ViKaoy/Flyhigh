@@ -626,7 +626,7 @@ function PlayState:update(dt)
 	self.lastTick = love.timer.getTime()
 	dt = dt * self.playback
 
-	if self.startedCountdown then
+	if self.startedCountdown and not self.paused then
 		self.conductor.time = self.conductor.time + dt * 1000
 
 		if self.startingSong and self.conductor.time >= 0 then

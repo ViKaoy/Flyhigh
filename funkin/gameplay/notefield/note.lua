@@ -4,7 +4,7 @@ function Note.toPos(time, speed)
 	return time * 450 * speed
 end
 
-Note.defaultSustainSegments = 3 -- also resets on States.Play.create
+Note.defaultSustainSegments = 3
 
 local susMesh, susVerts
 function Note.init()

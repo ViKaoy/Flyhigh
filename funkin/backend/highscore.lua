@@ -16,6 +16,7 @@ function Highscore.saveScore(song, score, diff)
 		Highscore.scores.songs[formatSong] = score
 	end
 	game.save.data.scores = Highscore.scores
+	ClientPrefs.saveData()
 end
 
 function Highscore.saveWeekScore(week, score, diff)

@@ -168,6 +168,13 @@ end
 function Receptor:spawnCover(note)
 	if not self.skin or not self.skin.covers then return end
 
+	-- prevents both cover overlap and uncaught covers
+	for _, cover in ipairs(self.covers.members) do
+		if cover.exists and cover.curAnim and cover.curAnim.name ~= "end" then
+			cover:kill()
+		end
+	end
+
 	local cover = self.covers:recycle(ActorSprite, self.coverFactory)
 	cover:play("start", true)
 	cover:updateHitbox()
