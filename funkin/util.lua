@@ -87,6 +87,14 @@ function util.playSfx(asset, volume, ...)
 	return game.sound.play(asset, (volume or 1) * ClientPrefs.data.sfxVolume / 100, ...)
 end
 
+function util.sprint(...)
+	local head = "[ " .. string.upper(tostring(game.getState())) .. " ] "
+	local v = {...}
+	for i = 1, #v do v[i] = tostring(v[i]) end
+
+	return print(head .. (table.concat(v, "    ")))
+end
+
 -- menu thing
 function util.responsiveBG(bg)
 	local scale = math.max(game.width / bg.width, game.height / bg.height)

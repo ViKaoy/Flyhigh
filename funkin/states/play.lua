@@ -485,10 +485,7 @@ end
 
 function PlayState:resyncSong()
 	local time, rate = game.sound.music:tell(), math.max(self.playback, 1)
-	if math.abs(time - self.conductor.time / 1000) > 0.015 * rate then
-		self.conductor.time = time * 1000
-	end
-	local maxDelay, vocals, lastVocals = 0.0091 * rate
+	local maxDelay, vocals, lastVocals = 0.0094 * rate
 	for _, notefield in ipairs(self.notefields) do
 		vocals = notefield.vocals
 		if vocals and lastVocals ~= vocals and vocals:isPlaying()
@@ -637,6 +634,15 @@ function PlayState:update(dt)
 			self:section(0)
 			self.scripts:call("songStart")
 		else
+			local time = game.sound.music:tell()
+			if game.sound.music:isPlaying() then
+				local contime, rate = PlayState.conductor.time / 1000, math.max(self.playback, 1)
+				if math.abs(time - contime) > 0.005 * rate then
+					PlayState.conductor.time = math.lerp(math.clamp(contime, time - rate, time + rate), time, dt * 8) * 1000
+					util.sprint("resync")
+				end
+			end
+
 			local noFocus, events, e = true, self.events
 			while events[1] do
 				e = events[1]
@@ -886,8 +892,12 @@ function PlayState:miss(note, dir)
 end
 
 function PlayState:recalculateRating(rating)
+	-- this WILL change
 	local score = self.playerNotefield.score
+	local acc = self.playerNotefield.accuracy
+	local rank = self.playerNotefield.rank
 	self.scoreText.content = "Score: " .. util.formatNumber(math.floor(score)) ..
+		" • " .. acc .. " " .. rank ..
 		(ClientPrefs.data.botplayMode and " [BOTPLAY]" or "")
 	if rating then self:popUpScore(rating) end
 end

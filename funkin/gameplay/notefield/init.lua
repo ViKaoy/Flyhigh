@@ -5,12 +5,13 @@ Note = require "funkin.gameplay.notefield.note"
 local Notefield = ActorGroup:extend("Notefield")
 
 Notefield.ratings = {
-	-- {name = "perfect", time = 0.0125, score = 400, splash = true,  mod = 1},
-	{name = "sick",    time = 0.045,  score = 350, splash = true,  mod = 1},
-	{name = "good",    time = 0.090,  score = 200, splash = false, mod = 0.7},
-	{name = "bad",     time = 0.135,  score = 100, splash = false, mod = 0.4},
-	{name = "shit",    time = -1,     score = 50,  splash = false, mod = 0.2}
+	-- { name = "perfect", time = 0.0125, score = 400, splash = true,  mod = 1},
+	{ name = "sick",    time = 0.045,  score = 350, splash = true,  mod = 1   },
+	{ name = "good",    time = 0.090,  score = 200, splash = false, mod = 0.7 },
+	{ name = "bad",     time = 0.135,  score = 100, splash = false, mod = 0.4 },
+	{ name = "shit",    time = -1,     score = 50,  splash = false, mod = 0.2 }
 }
+
 Notefield.safeZoneOffset = 1 / 6
 
 -- code cancer dont touch
@@ -44,6 +45,10 @@ function Notefield:new(x, y, keys, skin, character, vocals, speed)
 	for _, r in ipairs(Notefield.ratings) do
 		self[r.name .. "s"] = 0
 	end
+	self.totalPlayed = 0
+	self.totalHit = 0
+	self.accuracy = "0%"
+	self.rank = "NR" -- no rank
 
 	self.modifiers = {}
 	self.lanes = {}
@@ -222,6 +227,29 @@ function Notefield:getNotes(time, direction, sustainLoop)
 	return hitNotes, hasSustain
 end
 
+function Notefield:getRank()
+	if self.misses < 1 then
+		if self.bads > 0 or self.shits > 0 then
+			return "FC"
+		elseif self.goods > 0 then
+			return "GFC"
+		elseif self.sicks > 0 then
+			return "SFC"
+		-- elseif self.perfects > 0 then
+			-- return "PFC"
+		else
+			return "FC"
+		end
+	else
+		return self.misses >= 10 and "Clear" or "SDCB"
+	end
+	return "NR"
+end
+
+function Notefield:getAccuracy()
+	return math.min(1, math.max(0, self.totalHit / self.totalPlayed))
+end
+
 function Notefield:getRating(a, b)
 	local diff = math.abs(a - b)
 	for _, r in ipairs(Notefield.ratings) do
@@ -353,33 +381,46 @@ end
 
 function Notefield:hitNote(note, time)
 	local rating = self:getRating(note.time, time)
+
+	self.totalPlayed, self.totalHit = self.totalPlayed + 1, self.totalHit + rating.mod
+	self.accuracy = math.truncate(self:getAccuracy() * 100, 2) .. "%"
+
 	self.score, self.combo = self.score + rating.score, math.max(self.combo, 0) + 1
 	self:recalculateRatings(rating.name)
+
+	self.rank = self:getRank()
 
 	self.onNoteHit:dispatch(note, time, rating)
 end
 
-function Notefield:hitSustain(note, time, full, noScore)
-	if noScore == nil then noScore = false end
-	if noScore then
-		print("no sustain score at " .. time)
+function Notefield:hitSustain(note, time, full)
+	local stime = note.sustainTime
+
+	if full then
+		self.score = self.score + stime * 1000
+		self.totalPlayed, self.totalHit = self.totalPlayed + 1, self.totalHit + 1
 	else
-		if full then
-			self.score = self.score + note.sustainTime * 1000
-		else
-			self.score = self.score +
-				math.min(time - note.lastPress + Notefield.safeZoneOffset, note.sustainTime) * 1000
-		end
+		local htime = math.min(time - note.lastPress + Notefield.safeZoneOffset, stime)
+		local frac = 1 - math.max(0, math.min(1, (note.time + stime - time) / stime))
+
+		self.score = self.score + htime * 1000
+		self.totalPlayed, self.totalHit = self.totalPlayed + 1, self.totalHit + frac
 	end
+	self.accuracy = math.truncate(self:getAccuracy() * 100, 2) .. "%"
 	self.lastSustain = nil
 
 	self.onSustainHit:dispatch(note, time, full)
 end
 
 function Notefield:missNote(noteOrNF, key)
+	self.totalPlayed = self.totalPlayed + 1
+	self.accuracy = math.truncate(self:getAccuracy() * 100, 2) .. "%"
+
 	self.score, self.misses, self.combo =
 		self.score - 100, self.misses + 1, math.min(self.combo, 0) - 1
 	self.lastSustain = nil
+
+	self.rank = self:getRank()
 
 	self.onNoteMiss:dispatch(noteOrNF, key)
 end
