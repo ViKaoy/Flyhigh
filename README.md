@@ -1,6 +1,6 @@
 # ![](art/icon.png) Flynight
 
-![](art/funkin_logo.png)
+![](art/funkin_logo.gif)
 
 Friday Night Funkin' engine made using [FNF Löve](https://github.com/Stilic/FNF-LOVE)
 
