@@ -20,7 +20,7 @@ function Text:new(x, y, content, font, color, align, limit)
 
 		-- these affects the outline quality
 		precision = 8,
-		antialiasing = true
+		antialiasing = false
 	}
 
 	self.__content = nil

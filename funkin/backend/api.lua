@@ -168,6 +168,7 @@ function API.chart.readDiff(bpm, data, isV1)
 		for _, s in ipairs(data) do
 			if s and s.sectionNotes then
 				for _, n in ipairs(s.sectionNotes) do
+					if column == -1 then return end --psych old events
 					local kind = n[4]
 					local column, gf = n[2], kind == "GF Sing"
 					local hit = s.mustHitSection
@@ -227,7 +228,6 @@ function API.chart.readDiff(bpm, data, isV1)
 	end
 	return {enemy = dad, player = bf}, events, bpmChanges
 end
-
 
 --[[
 This moves a lot of playData info to charts, then it gets

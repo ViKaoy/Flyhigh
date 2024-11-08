@@ -25,7 +25,7 @@ function Character:changeCharacter(char, isPlayer)
 
 	self.__reverseDraw = self.__reverseDraw or false
 
-	self.dirAnim, self.holdTime, self.lastHit, self.waitReleaseAfterSing =
+	self.dirAnim, self.holdTime, self.lastHit, self.danceAfterRelease =
 		nil, 4, math.negative_infinity, false
 	self.danceSpeed, self.danced = 2, false
 
@@ -172,7 +172,7 @@ function Character:update(dt)
 		< PlayState.conductor.time then
 		local canDance = true
 
-		if self.waitReleaseAfterSing then
+		if self.danceAfterRelease then
 			for input, _ in pairs(PlayState.inputDirections) do
 				if controls:down(input) then
 					canDance = false

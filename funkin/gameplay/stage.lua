@@ -7,6 +7,7 @@ local Stage = Group:extend("Stage")
 function Stage:new(name)
 	Stage.super.new(self)
 
+	if name == nil then name = "stage" end
 	self.name = name
 
 	self.camZoom, self.camSpeed, self.camZoomSpeed = 1.1, 1, 1
@@ -26,12 +27,11 @@ function Stage:new(name)
 		self.path = path .. "/"
 
 		local json = paths.getJSON("data/" .. path)
-		if json == nil or paths.exists(
-				paths.getPath("data/" .. path .. ".lua"), "file") == nil then
-			print(path .. " doesnt exists!")
+		if paths.getLua("data/" .. path) == nil and json == nil then
+			print("[ STAGE ] Stage \"" .. name .. "\" doesn't exists!")
 			path = "stages/default"
+			self.path = path .. "/"
 		end
-		json = paths.getJSON("data/" .. path)
 
 		self.script = Script("data/" .. path)
 		self.script:set("SCRIPT_PATH", path .. "/")

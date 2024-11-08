@@ -1,4 +1,5 @@
 local Events = require "funkin.backend.scripting.events"
+local Parser = require "funkin.backend.parser"
 
 ---@class PlayState:State
 local PlayState = State:extend("PlayState")
@@ -32,7 +33,7 @@ function PlayState.loadSong(song, diff)
 	diff = diff or PlayState.defaultDifficulty
 	PlayState.songDifficulty = diff
 
-	PlayState.SONG = API.chart.parse(song, diff)
+	PlayState.SONG = Parser.getChart(song, diff)
 
 	return true
 end
@@ -135,7 +136,7 @@ function PlayState:enter()
 	self:add(self.stage)
 	self.scripts:add(self.stage.script)
 
-	if PlayState.SONG.gfVersion ~= "" then
+	if PlayState.SONG.gfVersion ~= "" and PlayState.SONG.gfVersion ~= "invisible" then
 		self.gf = Character(self.stage.gfPos.x, self.stage.gfPos.y,
 			PlayState.SONG.gfVersion, false)
 		self.gf:setScrollFactor(0.95, 0.95)
@@ -143,14 +144,14 @@ function PlayState:enter()
 		self.scripts:add(self.gf.script)
 	end
 
-	if PlayState.SONG.player2 ~= "" then
+	if PlayState.SONG.player2 ~= "" and PlayState.SONG.player2 ~= "invisible" then
 		self.dad = Character(self.stage.dadPos.x, self.stage.dadPos.y,
 			PlayState.SONG.player2, false)
 		self:add(self.dad)
 		self.scripts:add(self.dad.script)
 	end
 
-	if PlayState.SONG.player1 ~= "" then
+	if PlayState.SONG.player1 ~= "" and PlayState.SONG.player1 ~= "invisible" then
 		self.boyfriend = Character(self.stage.boyfriendPos.x,
 			self.stage.boyfriendPos.y, PlayState.SONG.player1,
 			true)
@@ -186,9 +187,12 @@ function PlayState:enter()
 		paths.getVoices(songName, PlayState.SONG.player1, true)
 		or paths.getVoices(songName, "Player", true)
 		or paths.getVoices(songName, nil, true),
+
 		paths.getVoices(songName, PlayState.SONG.player2, true)
 		or paths.getVoices(songName, "Opponent", true),
+
 		ClientPrefs.data.vocalVolume / 100
+
 	if playerVocals then
 		playerVocals = game.sound.load(playerVocals)
 		playerVocals:setVolume(volume)
@@ -197,11 +201,13 @@ function PlayState:enter()
 		enemyVocals = game.sound.load(enemyVocals)
 		enemyVocals:setVolume(volume)
 	end
-	local y, volume, cam = game.height / 2, ClientPrefs.data.vocalVolume / 100, {self.camNotes}
-	self.playerNotefield = Notefield(0, y, 4, PlayState.SONG.skin,
+
+	local y, cam, skin = game.height / 2, {self.camNotes}, PlayState.SONG.skin
+
+	self.playerNotefield = Notefield(0, y, 4, skin,
 		self.boyfriend, playerVocals, PlayState.SONG.speed)
-	self.enemyNotefield = Notefield(0, y, 4, PlayState.SONG.skin,
-		self.dad, enemyVocals, PlayState.SONG.speed)
+	self.enemyNotefield = Notefield(0, y, 4, skin,
+		self.dad, enemyVocals or playerVocals, PlayState.SONG.speed)
 
 	self.playerNotefield.bot = ClientPrefs.data.botplayMode
 	self.enemyNotefield.canSpawnSplash = false
@@ -210,7 +216,6 @@ function PlayState:enter()
 	self.notefields = {self.playerNotefield, self.enemyNotefield, {character = self.gf}}
 	self:positionNotefields()
 
-	self.playerNotefield:generateInputSignals()
 	for _, notefield in ipairs(self.notefields) do
 		if notefield.is then
 			notefield.onNoteHit:add(bind(self, self.goodNoteHit))
@@ -219,15 +224,13 @@ function PlayState:enter()
 			notefield.onNoteMash:add(function()
 				self.health = self.health - 0.0896
 			end)
+			notefield.parent = self
 		end
 	end
 
-	for _, n in ipairs(PlayState.SONG.notes.enemy) do
-		self:generateNote(self.enemyNotefield, n)
-	end
-	for _, n in ipairs(PlayState.SONG.notes.player) do
-		self:generateNote(self.playerNotefield, n)
-	end
+	self.enemyNotefield:setNotes(PlayState.SONG.notes.enemy)
+	self.playerNotefield:setNotes(PlayState.SONG.notes.player)
+
 	self:add(self.enemyNotefield)
 	self:add(self.playerNotefield)
 
@@ -276,7 +279,7 @@ function PlayState:enter()
 	self:add(self.healthBar)
 
 	local fontScore = paths.getFont("vcr.ttf", 16)
-	self.scoreText = Text(0, 0, "", fontScore, Color.WHITE, "right")
+	self.scoreText = Text(0, self.healthBar.y + 30, "", fontScore, Color.WHITE, "right")
 	self.scoreText.outline.width = 1
 	self.scoreText.antialiasing = false
 	self:add(self.scoreText)
@@ -313,8 +316,6 @@ function PlayState:enter()
 
 	if self.buttons then self.buttons:disable() end
 
-	self.lastTick = love.timer.getTime()
-
 	self.bindedKeyPress = bind(self, self.onKeyPress)
 	controls:bindPress(self.bindedKeyPress)
 
@@ -326,7 +327,6 @@ function PlayState:enter()
 			if notefield.is then notefield.downscroll = true end
 		end
 	end
-	self:positionText()
 
 	if self.storyMode and not PlayState.seenCutscene then
 		PlayState.seenCutscene = true
@@ -377,18 +377,19 @@ function PlayState:enter()
 end
 
 function PlayState:positionNotefields()
-	if self.middleScroll then
-		self.playerNotefield:screenCenter("x")
+	for _, notefield in ipairs(self.notefields) do
+		if notefield.is then notefield:screenCenter("x") end
+	end
 
+	if self.middleScroll then
 		for _, notefield in ipairs(self.notefields) do
 			if notefield.is and notefield ~= self.playerNotefield then
 				notefield.visible = false
 			end
 		end
 	else
-		local baseX = 44
-		self.playerNotefield.x = game.width / 2 + baseX
-		self.enemyNotefield.x = baseX
+		self.playerNotefield.x = self.playerNotefield.x + game.width / 4.5
+		self.enemyNotefield.x = self.enemyNotefield.x - game.width / 4.5
 
 		for _, notefield in ipairs(self.notefields) do
 			if notefield.is then notefield.visible = true end
@@ -396,17 +397,10 @@ function PlayState:positionNotefields()
 	end
 end
 
-function PlayState:positionText()
-	self.scoreText.x, self.scoreText.y = self.healthBar.x + self.healthBar.bg.width - 190, self.healthBar.y + 30
-end
-
-function PlayState:generateNote(notefield, n)
-	local sustainTime = n.l or 0
-	if sustainTime > 0 then
-		sustainTime = math.max(sustainTime / 1000, 0.125)
-	end
-	local note = notefield:makeNote(n.t / 1000, n.d % 4, sustainTime, n.k)
-	if n.gf then note.character = self.gf end
+function PlayState:positionHUD()
+	self.healthBar.y = not self.downScroll and game.height - self.healthBar:getHeight() - 58 or 58
+	self.scoreText:screenCenter("x")
+	self.scoreText.y = self.healthBar.y + (self.downScroll and -30 or 30)
 end
 
 function PlayState:startCountdown()
@@ -620,10 +614,9 @@ function PlayState:update(dt)
 
 	if self.cutscene then self.cutscene:update(dt) end
 
-	self.lastTick = love.timer.getTime()
 	dt = dt * self.playback
 
-	if self.startedCountdown and not self.paused then
+	if self.startedCountdown then
 		self.conductor.time = self.conductor.time + dt * 1000
 
 		if self.startingSong and self.conductor.time >= 0 then
@@ -638,8 +631,7 @@ function PlayState:update(dt)
 			if game.sound.music:isPlaying() then
 				local contime, rate = PlayState.conductor.time / 1000, math.max(self.playback, 1)
 				if math.abs(time - contime) > 0.005 * rate then
-					PlayState.conductor.time = math.lerp(math.clamp(contime, time - rate, time + rate), time, dt * 8) * 1000
-					util.sprint("resync")
+					self.conductor.time = math.lerp(math.clamp(contime, time - rate, time + rate), time, dt * 8) * 1000
 				end
 			end
 
@@ -707,9 +699,8 @@ function PlayState:onSettingChange(category, setting)
 					if notefield.is then notefield.downscroll = downscroll end
 				end
 
-				self.healthBar.y = game.height * (downscroll and 0.1 or 0.9)
-				self:positionText()
 				self.downScroll = downscroll
+				self:positionHUD()
 			end,
 			["middleScroll"] = function()
 				self.middleScroll = ClientPrefs.data.middleScroll
@@ -748,7 +739,7 @@ function PlayState:onSettingChange(category, setting)
 	self.scripts:call("onSettingChange", category, setting)
 end
 
-function PlayState:goodNoteHit(note, time, rating)
+function PlayState:goodNoteHit(note, rating)
 	self.scripts:call("goodNoteHit", note, rating)
 
 	local notefield, dir, isSustain =
@@ -760,12 +751,13 @@ function PlayState:goodNoteHit(note, time, rating)
 		note.wasGoodHit = true
 
 		if event.unmuteVocals then
-			local vocals = notefield.vocals or self.playerNotefield.vocals
+			local vocals = notefield.vocals
 			if vocals then vocals:setVolume(ClientPrefs.data.vocalVolume / 100) end
 		end
 
 		local char = event.character
 		if char and not event.cancelledAnim then
+			char.danceAfterRelease = not notefield.bot
 			local lastSustain, type = notefield.lastSustain, note.type
 			char.isOnSustain = lastSustain or note.sustain
 			if char.isOnSustain then char._time = char._loopTime end
@@ -791,11 +783,9 @@ function PlayState:goodNoteHit(note, time, rating)
 		local receptor = notefield.receptors[dir + 1]
 		if receptor then
 			if not event.strumGlowCancelled then
-				local snap = notefield.bot and (receptor.holdTime ~= 0 and receptor.holdTime) or 0
 				receptor:play("confirm", true)
-				if not note.sustain then
-					receptor.holdTime = snap ~= 0 and snap or 0.25
-				end
+				receptor.holdTime = note.sustain and 0 or (notefield.bot and 0.18 or 0.25)
+
 				if ClientPrefs.data.noteSplash and notefield.canSpawnSplash and rating.splash then
 					receptor:spawnSplash()
 				end
@@ -819,7 +809,7 @@ function PlayState:goodNoteHit(note, time, rating)
 	self.scripts:call("postGoodNoteHit", note, rating)
 end
 
-function PlayState:goodSustainHit(note, time, fullyHeldSustain)
+function PlayState:goodSustainHit(note, fullyHeldSustain)
 	self.scripts:call("goodSustainHit", note)
 
 	local notefield, dir, fullScore =
@@ -857,7 +847,6 @@ function PlayState:miss(note, dir)
 	if not event.cancelled and (ghostMiss or not note.tooLate) then
 		if not ghostMiss then
 			note.tooLate = true
-			note.killTime = 1
 		end
 
 		if event.muteVocals and notefield.vocals then notefield.vocals:setVolume(0) end
@@ -870,6 +859,7 @@ function PlayState:miss(note, dir)
 		local char = event.character
 		if char and not event.cancelledAnim then
 			char:sing(dir, "miss")
+			char.danceAfterRelease = false
 			char.isOnSustain = false
 		end
 
@@ -893,12 +883,13 @@ end
 
 function PlayState:recalculateRating(rating)
 	-- this WILL change
-	local score = self.playerNotefield.score
-	local acc = self.playerNotefield.accuracy
-	local rank = self.playerNotefield.rank
-	self.scoreText.content = "Score: " .. util.formatNumber(math.floor(score)) ..
-		" • " .. acc .. " " .. rank ..
+	local nf = self.playerNotefield
+
+	self.scoreText.content = "Score: " .. util.formatNumber(nf.score) ..
+		" • Misses: " .. nf.misses .. " • " .. nf.accuracy .. " " .. nf.rank ..
 		(ClientPrefs.data.botplayMode and " [BOTPLAY]" or "")
+	self:positionHUD()
+
 	if rating then self:popUpScore(rating) end
 end
 
@@ -983,9 +974,7 @@ function PlayState:onKeyPress(key, t, a, b, time)
 
 	if type(key) ~= "number" then return end
 	for _, notefield in ipairs(self.notefields) do
-		if notefield.onKeyPress then
-			notefield.onKeyPress:dispatch(key + 1, time, self.lastTick)
-		end
+		if notefield.keyPress then notefield:keyPress(key + 1, time) end
 	end
 end
 
@@ -994,9 +983,7 @@ function PlayState:onKeyRelease(key, t, a, time)
 	if type(key) ~= "number" then return end
 
 	for _, notefield in ipairs(self.notefields) do
-		if notefield.onKeyRelease then
-			notefield.onKeyRelease:dispatch(key + 1)
-		end
+		if notefield.keyRelease then notefield:keyRelease(key + 1) end
 	end
 end
 
