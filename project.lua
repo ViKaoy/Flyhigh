@@ -6,7 +6,7 @@ return {
 	icon = "art/icon.png",
 
 	version = "0.7.1",
-	FNversion = "0.0.2 WIP",
+	FHversion = "0.0.2 WIP",
 
 	package = "dev.flyhigh",
 	width = 1280,

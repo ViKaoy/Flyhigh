@@ -6,7 +6,7 @@ function MainMenuState:enter()
 	self.notCreated = false
 
 	self.versionText = Text(0, game.height - 18,
-		"v" .. Project.version .. " • Flynight v" .. Project.FNversion,
+		"v" .. Project.version .. " • Flyhigh v" .. Project.FHversion,
 		paths.getFont("vcr.ttf", 16))
 	self.versionText.antialiasing = false
 	self.versionText.outline.width = 1
