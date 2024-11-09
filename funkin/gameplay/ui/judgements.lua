@@ -7,6 +7,8 @@ function Judgements:new(x, y, skin)
 	self.ratingVisible = true
 	self.comboNumVisible = true
 
+	self.msGroup = SpriteGroup()
+
 	self.skin = skin or "default"
 	self.antialiasing = not skin:endsWith("-pixel")
 

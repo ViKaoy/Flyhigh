@@ -1,14 +1,14 @@
 return {
 	DEBUG_MODE = true,
 
-	title = "Flynight",
+	title = "Flyhigh",
 	file = "FNF-LOVE.FLYNIGHT",
 	icon = "art/icon.png",
 
 	version = "0.7.1",
-	FNversion = "0.0.1 WIP",
+	FNversion = "0.0.2 WIP",
 
-	package = "dev.flynight",
+	package = "dev.flyhigh",
 	width = 1280,
 	height = 720,
 	FPS = 60,

@@ -120,8 +120,8 @@ function PlayState:enter()
 	self.camNotes = Camera() --Camera will be changed to ActorCamera once that class is done
 	self.camHUD = Camera()
 	self.camOther = Camera()
-	game.cameras.add(self.camHUD, false)
 	game.cameras.add(self.camNotes, false)
+	game.cameras.add(self.camHUD, false)
 	game.cameras.add(self.camOther, false)
 
 	self.camHUD.bgColor[4] = ClientPrefs.data.backgroundDim / 100
@@ -205,9 +205,9 @@ function PlayState:enter()
 	local y, cam, skin = game.height / 2, {self.camNotes}, PlayState.SONG.skin
 
 	self.playerNotefield = Notefield(0, y, 4, skin,
-		self.boyfriend, playerVocals, PlayState.SONG.speed)
+		self.boyfriend, playerVocals, PlayState.SONG.speed, self)
 	self.enemyNotefield = Notefield(0, y, 4, skin,
-		self.dad, enemyVocals or playerVocals, PlayState.SONG.speed)
+		self.dad, enemyVocals or playerVocals, PlayState.SONG.speed, self)
 
 	self.playerNotefield.bot = ClientPrefs.data.botplayMode
 	self.enemyNotefield.canSpawnSplash = false
@@ -215,18 +215,6 @@ function PlayState:enter()
 
 	self.notefields = {self.playerNotefield, self.enemyNotefield, {character = self.gf}}
 	self:positionNotefields()
-
-	for _, notefield in ipairs(self.notefields) do
-		if notefield.is then
-			notefield.onNoteHit:add(bind(self, self.goodNoteHit))
-			notefield.onSustainHit:add(bind(self, self.goodSustainHit))
-			notefield.onNoteMiss:add(bind(self, self.miss))
-			notefield.onNoteMash:add(function()
-				self.health = self.health - 0.0896
-			end)
-			notefield.parent = self
-		end
-	end
 
 	self.enemyNotefield:setNotes(PlayState.SONG.notes.enemy)
 	self.playerNotefield:setNotes(PlayState.SONG.notes.player)
@@ -280,7 +268,7 @@ function PlayState:enter()
 
 	local fontScore = paths.getFont("vcr.ttf", 16)
 	self.scoreText = Text(0, self.healthBar.y + 30, "", fontScore, Color.WHITE, "right")
-	self.scoreText.outline.width = 1
+	self.scoreText.outline.width = 2
 	self.scoreText.antialiasing = false
 	self:add(self.scoreText)
 
@@ -696,7 +684,9 @@ function PlayState:onSettingChange(category, setting)
 			["downScroll"] = function()
 				local downscroll = ClientPrefs.data.downScroll
 				for _, notefield in ipairs(self.notefields) do
-					if notefield.is then notefield.downscroll = downscroll end
+					if notefield.is then
+						notefield.downscroll = downscroll
+					end
 				end
 
 				self.downScroll = downscroll
@@ -759,8 +749,7 @@ function PlayState:goodNoteHit(note, rating)
 		if char and not event.cancelledAnim then
 			char.danceAfterRelease = not notefield.bot
 			local lastSustain, type = notefield.lastSustain, note.type
-			char.isOnSustain = lastSustain or note.sustain
-			if char.isOnSustain then char._time = char._loopTime end
+			char:resetStroke(lastSustain or note.sustain)
 			if type ~= "alt" then type = nil end
 			if lastSustain and not isSustain
 				and lastSustain.sustainTime > note.sustainTime then

@@ -1,5 +1,5 @@
 local Character = Sprite:extend("Character")
-Character.sustainAnim = true
+Character.sustainStroke = false
 
 Character.directions = {"left", "down", "up", "right"}
 Character.editorMode = false
@@ -30,9 +30,9 @@ function Character:changeCharacter(char, isPlayer)
 	self.danceSpeed, self.danced = 2, false
 
 	self.isOnSustain = false
-	self._loopTime = math.max(0.08, (PlayState.conductor and
+	self.strokeTime = math.max(0.082, (PlayState.conductor and
 		PlayState.conductor.stepCrotchet / 1000 or 0.08))
-	self._time = self._loopTime
+	self.__strokeTime = self.strokeTime
 
 	local jsonData = paths.getJSON("data/characters/" .. char)
 	if jsonData == nil then jsonData = paths.getJSON("data/characters/bf") end
@@ -140,13 +140,20 @@ function Character:switchAnim(oldAnim, newAnim)
 	end
 end
 
+function Character:resetStroke(onSustain)
+	if Character.sustainStroke then
+		self.isOnSustain = onSustain
+		self.__strokeTime = self.strokeTime
+	end
+end
+
 function Character:update(dt)
-	if Character.sustainAnim and self.isOnSustain then
-		if self._time <= 0 then
-			self._time = self._loopTime
+	if Character.sustainStroke and self.isOnSustain then
+		if self.__strokeTime <= 0 then
+			self.__strokeTime = self.strokeTime
 			self:playAnim(self.curAnim.name, true)
 		else
-			self._time = self._time - dt
+			self.__strokeTime = self.__strokeTime - dt
 		end
 	end
 

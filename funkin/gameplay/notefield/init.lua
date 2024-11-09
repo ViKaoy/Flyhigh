@@ -17,8 +17,8 @@ Notefield.ranks = {
 	{ name = "GFC",   cond = function(s) return s.misses < 1 and s.goods > 0 end },
 	{ name = "SFC",   cond = function(s) return s.misses < 1 and s.sicks > 0 end },
 	{ name = "FC",    cond = function(s) return s.misses < 1 end },
-	{ name = "Clear", cond = function(s) return s.misses >= 10 end },
-	{ name = "SDCB",  cond = function(s) return s.misses > 0 end }
+	{ name = "SDM",   cond = function(s) return s.misses > 0 end },
+	{ name = "Clear", cond = function(s) return s.misses >= 10 end }
 }
 
 Notefield.safeZoneOffset = 1 / 6
@@ -29,7 +29,7 @@ Notefield.missScore = -150
 
 -- code cancer dont touch
 
-function Notefield:new(x, y, keys, skin, character, vocals, speed)
+function Notefield:new(x, y, keys, skin, character, vocals, speed, parent)
 	Notefield.super.new(self, x, y)
 
 	self.noteWidth = 160 * 0.7
@@ -83,12 +83,24 @@ function Notefield:new(x, y, keys, skin, character, vocals, speed)
 	self:add(self.__topSprites)
 
 	self:getWidth()
+
+	if parent then
+		self.parent = parent
+
+		if parent.goodNoteHit then self.onNoteHit:add(bind(parent, parent.goodNoteHit)) end
+		if parent.goodSustainHit then self.onSustainHit:add(bind(parent, parent.goodSustainHit)) end
+		if parent.miss then self.onNoteMiss:add(bind(parent, parent.miss)) end
+		self.onNoteMash:add(function()
+			if parent.health then parent.health = parent.health - 0.09 end
+		end)
+	end
 end
 
 function Notefield:fadeInReceptors()
 	local tween = self.parent and (function(...)
 		self.parent.tween:tween(...)
 	end) or Tween.tween
+
 	for i = 1, #self.lanes do
 		local receptor = self.lanes[i].receptor
 		receptor.y = receptor.y - 10
@@ -96,7 +108,7 @@ function Notefield:fadeInReceptors()
 
 		tween(receptor, {y = receptor.y + 10, alpha = 1}, 1, {
 			ease = "circOut",
-			startDelay = 0.16 + (0.2 * i)
+			startDelay = (0.2 * i)
 		})
 	end
 end
@@ -217,7 +229,7 @@ function Notefield:getNotes(time, direction, sustainLoop)
 	if #notes == 0 then return {} end
 
 	local safeZoneOffset, hitNotes, i, started, hasSustain,
-	forceHit, noteTime, hitTime, prev, prevIdx = Notefield.safeZoneOffset, {}, 1
+	forceHit, noteTime, hitTime, prev, prevIdx = self.safeZoneOffset, {}, 1
 	for _, note in ipairs(notes) do
 		noteTime = note.time
 		if not note.tooLate
@@ -267,21 +279,22 @@ end
 
 function Notefield:getExactAccuracy(noteTime, hitTime)
 	local diff = math.abs(noteTime - hitTime)
-	return math.max(0, 1 - (diff / Notefield.safeZoneOffset))
+	return math.max(0, 1 - (diff / self.safeZoneOffset))
 end
 
 function Notefield:getRating(a, b)
 	local diff = math.abs(a - b)
-	for _, r in ipairs(Notefield.ratings) do
-		if diff <= (r.time < 0 and Notefield.safeZoneOffset or r.time) then return r end
+	for _, r in ipairs(self.ratings) do
+		if diff <= (r.time < 0 and self.safeZoneOffset or r.time) then return r end
 	end
+	return self.ratings[4]
 end
 
 function Notefield:update(dt)
 	Notefield.super.update(self, dt)
 
 	local time = PlayState.conductor.time / 1000
-	local missOffset = time - Notefield.safeZoneOffset / 1.25
+	local missOffset = time - self.safeZoneOffset / 1.25
 
 	if PlayState.conductor.time < 0 or game.sound.music:isPlaying() then
 		self.time, self.beat = time, PlayState.conductor.currentBeatFloat
@@ -411,8 +424,9 @@ function Notefield:hitNote(note)
 
 	note.lastPress = time
 
-	self.onNoteHit:dispatch(note, rating)
+	self.onNoteHit:dispatch(note, rating, math.round((time - note.time) * 1000))
 end
+
 
 function Notefield:hitSustain(note, full)
 	local time, stime = self.time, note.sustainTime
@@ -422,7 +436,7 @@ function Notefield:hitSustain(note, full)
 		self.totalPlayed, self.totalHit = self.totalPlayed + 1, self.totalHit + 1
 		self.totalExactHit = self.totalExactHit + 1
 	else
-		local htime = math.min(time - note.lastPress + Notefield.safeZoneOffset, stime)
+		local htime = math.min(time - note.lastPress + self.safeZoneOffset, stime)
 		local acc = 1 - math.max(0, math.min(1, (note.time + stime - time) / stime))
 
 		local score = math.floor(self.hitSustainScore * acc)

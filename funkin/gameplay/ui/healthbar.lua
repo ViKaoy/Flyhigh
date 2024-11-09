@@ -22,11 +22,11 @@ function HealthBar:new(bfData, dadData, skin)
 		1
 
 	local y = self.bar.y
-	self.iconP1.y = y - self.iconP1.height / 2
-	self.iconP2.y = y - self.iconP2.height / 2
+	self.iconP1.y = self.bar.y - 75
+	self.iconP2.y = self.bar.y - 75
 
-	self.bar.color = Color.fromHEX(0xFF66FF33)
-	self.bar.color.bg = Color.fromHEX(0xFFFF0000)
+	self.bar.color = Color.fromHEX(0x66FF33)
+	self.bar.color.bg = Color.fromHEX(0xFF0000)
 
 	self:add(self.iconP1)
 	self:add(self.iconP2)
@@ -39,8 +39,8 @@ local iconOffset = 26
 function HealthBar:update(dt)
 	HealthBar.super.update(self, dt)
 	self.bar:setValue(self.value)
-	local lerpValue, healthPercent, y =
-		util.coolLerp(self.iconScale, 1, 15, dt), self.bar.percent, self.bar.y - 75
+	local lerpValue, healthPercent =
+		util.coolLerp(self.iconScale, 1, 15, dt), self.bar.percent
 	self.iconScale, self.iconP1.health, self.iconP2.health =
 		lerpValue, healthPercent, healthPercent
 	self.iconP1:setScale(lerpValue)
@@ -51,7 +51,6 @@ function HealthBar:update(dt)
 	self.iconP2.x = self.bar.x + (self.bar.width *
 		(math.remapToRange(healthPercent, 0, 100, 100,
 			0) * 0.01)) - (150 * self.iconP2.scale.x) / 2 - iconOffset * 2
-	self.iconP1.y, self.iconP2.y = y, y
 end
 
 function HealthBar:screenCenter(axes)
