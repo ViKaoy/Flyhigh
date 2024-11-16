@@ -456,6 +456,7 @@ function Notefield:missNote(noteOrNF, key)
 end
 
 function Notefield:resetStroke(dir, doPress)
+	if not self.receptors then return end
 	local receptor = self.receptors[dir]
 	if receptor then
 		receptor:play(doPress and "pressed" or "static")
