@@ -124,7 +124,7 @@ function PlayState:enter()
 	game.cameras.add(self.camHUD, false)
 	game.cameras.add(self.camOther, false)
 
-	self.camHUD.bgColor[4] = ClientPrefs.data.backgroundDim / 100
+	game.camera.alpha = 1 - ClientPrefs.data.backgroundDim / 100
 
 	if game.sound.music then game.sound.music:reset(true) end
 	game.sound.loadMusic(paths.getInst(songName))
@@ -582,7 +582,7 @@ function PlayState:executeEvent(event)
 	for _, s in pairs(self.eventScripts) do
 		if s.belongsTo == event.e then s:call("event", event) end
 	end
-	self.scripts:call("onEvent", event.e, event.v)
+	self.scripts:call("onEvent", event)
 end
 
 function PlayState:doCountdown(beat)
@@ -618,7 +618,7 @@ function PlayState:update(dt)
 			local time = game.sound.music:tell()
 			if game.sound.music:isPlaying() then
 				local contime, rate = PlayState.conductor.time / 1000, math.max(self.playback, 1)
-				if math.abs(time - contime) > 0.005 * rate then
+				if math.abs(time - contime) > 0.009 * rate then
 					self.conductor.time = math.lerp(math.clamp(contime, time - rate, time + rate), time, dt * 8) * 1000
 				end
 			end
@@ -701,8 +701,11 @@ function PlayState:onSettingChange(category, setting)
 				self.usedBotplay = true
 				self:recalculateRating()
 			end,
+			["complexAccuracy"] = function()
+				self:recalculateRating()
+			end,
 			["backgroundDim"] = function()
-				self.camHUD.bgColor[4] = ClientPrefs.data.backgroundDim / 100
+				game.camera.alpha = 1 - ClientPrefs.data.backgroundDim / 100
 			end,
 			["playback"] = function()
 				self:setPlayback(ClientPrefs.data.playback)
@@ -729,7 +732,7 @@ function PlayState:onSettingChange(category, setting)
 	self.scripts:call("onSettingChange", category, setting)
 end
 
-function PlayState:goodNoteHit(note, rating)
+function PlayState:goodNoteHit(note, rating, timing)
 	self.scripts:call("goodNoteHit", note, rating)
 
 	local notefield, dir, isSustain =
@@ -773,7 +776,7 @@ function PlayState:goodNoteHit(note, rating)
 		if receptor then
 			if not event.strumGlowCancelled then
 				receptor:play("confirm", true)
-				receptor.holdTime = note.sustain and 0 or (notefield.bot and 0.18 or 0.25)
+				receptor.holdTime = note.sustain and 0 or (notefield.bot and 0.18 or 0.24)
 
 				if ClientPrefs.data.noteSplash and notefield.canSpawnSplash and rating.splash then
 					receptor:spawnSplash()
@@ -786,7 +789,7 @@ function PlayState:goodNoteHit(note, rating)
 
 		if self.playerNotefield == notefield then
 			self.health = math.min(self.health + 0.023, 2)
-			self:recalculateRating(rating.name)
+			self:recalculateRating(rating.name, timing)
 
 			local hitSoundVolume = ClientPrefs.data.hitSound
 			if hitSoundVolume > 0 then
@@ -814,6 +817,10 @@ function PlayState:goodSustainHit(note, fullyHeldSustain)
 
 		if not event.cancelledAnim then
 			notefield:resetStroke(dir + 1, fullyHeldSustain)
+			local receptor = notefield.receptors[dir + 1]
+			if receptor and notefield.bot then
+				receptor.holdTime = 0.15
+			end
 		end
 		if fullScore then notefield:removeNote(note) end
 	end
@@ -870,24 +877,27 @@ function PlayState:miss(note, dir)
 	self.scripts:call(ghostMiss and "postMiss" or "postNoteMiss", funcParam)
 end
 
-function PlayState:recalculateRating(rating)
+function PlayState:recalculateRating(rating, timing)
 	-- this WILL change
 	local nf = self.playerNotefield
+	local acc = ClientPrefs.data.complexAccuracy and nf.complexAccuracy or nf.accuracy
 
 	self.scoreText.content = "Score: " .. util.formatNumber(nf.score) ..
-		" • Misses: " .. nf.misses .. " • " .. nf.accuracy .. " " .. nf.rank ..
+		" • Misses: " .. nf.misses .. " • " .. acc .. " - " .. nf.rank ..
 		(ClientPrefs.data.botplayMode and " [BOTPLAY]" or "")
 	self:positionHUD()
 
-	if rating then self:popUpScore(rating) end
+	if rating then self:popUpScore(rating, timing) end
 end
 
-function PlayState:popUpScore(rating)
+function PlayState:popUpScore(rating, timing)
 	local event = self.scripts:event('onPopUpScore', Events.PopUpScore())
 	if not event.cancelled then
 		self.judgeSprites.ratingVisible = not event.hideRating
 		self.judgeSprites.comboNumVisible = not event.hideScore
-		self.judgeSprites:spawn(rating, self.playerNotefield.combo)
+		self.judgeSprites.x = self.middleScroll and
+			self.playerNotefield.x - self.judgeSprites.area.width or game.width / 3
+		self.judgeSprites:spawn(rating, self.playerNotefield.combo, timing)
 	end
 end
 

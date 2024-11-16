@@ -1,4 +1,4 @@
-local codename = {}
+local codename = {name = "Codename"}
 
 local function set(tbl, key, v) if v ~= nil then tbl[key] = v end end
 
@@ -60,8 +60,6 @@ function codename.parse(data, events, meta, diff)
 	set(chart, "speed", data.scrollSpeed)
 
 	chart.notes, chart.events = getStuff(data, events, chart)
-
-	print("Parsed " .. chart.song .. " as Codename chart")
 
 	return chart
 end

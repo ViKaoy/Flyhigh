@@ -1,5 +1,5 @@
 local function set(tbl, var, val)
-	tbl[var] = (val ~= nil and val) or tbl[var]
+	tbl[var] = val ~= nil and val or tbl[var]
 end
 
 local Stage = Group:extend("Stage")
@@ -28,12 +28,12 @@ function Stage:new(name)
 
 		local json = paths.getJSON("data/" .. path)
 		if paths.getLua("data/" .. path) == nil and json == nil then
-			print("[ STAGE ] Stage \"" .. name .. "\" doesn't exists!")
+			print("[STAGE] Stage \"" .. name .. "\" doesn't exists")
 			path = "stages/default"
 			self.path = path .. "/"
 		end
 
-		self.script = Script("data/" .. path)
+		self.script = Script("data/" .. path, false)
 		self.script:set("SCRIPT_PATH", path .. "/")
 		self.script:set("self", self)
 
@@ -43,22 +43,34 @@ function Stage:new(name)
 				self:add(sprite, spr.is_foreground)
 			end
 			if json.bf then
-				set(self.boyfriendPos, "x", json.bf.position[1])
-				set(self.boyfriendPos, "y", json.bf.position[2])
-				set(self.boyfriendCam, "x", json.bf.camera_offsets[1])
-				set(self.boyfriendCam, "y", json.bf.camera_offsets[2])
+				if json.bf.position then
+					set(self.boyfriendPos, "x", json.bf.position[1])
+					set(self.boyfriendPos, "y", json.bf.position[2])
+				end
+				if json.bf.camera_offsets then
+					set(self.boyfriendCam, "x", json.bf.camera_offsets[1])
+					set(self.boyfriendCam, "y", json.bf.camera_offsets[2])
+				end
 			end
 			if json.gf then
-				set(self.gfPos, "x", json.gf.position[1])
-				set(self.gfPos, "y", json.gf.position[2])
-				set(self.gfCam, "x", json.gf.camera_offsets[1])
-				set(self.gfCam, "y", json.gf.camera_offsets[2])
+				if json.gf.position then
+					set(self.gfPos, "x", json.gf.position[1])
+					set(self.gfPos, "y", json.gf.position[2])
+				end
+				if json.gf.camera_offsets then
+					set(self.gfCam, "x", json.gf.camera_offsets[1])
+					set(self.gfCam, "y", json.gf.camera_offsets[2])
+				end
 			end
 			if json.dad then
-				set(self.dadPos, "x", json.dad.position[1])
-				set(self.dadPos, "y", json.dad.position[2])
-				set(self.dadCam, "x", json.dad.camera_offsets[1])
-				set(self.dadCam, "y", json.dad.camera_offsets[2])
+				if json.dad.position then
+					set(self.dadPos, "x", json.dad.position[1])
+					set(self.dadPos, "y", json.dad.position[2])
+				end
+				if json.dad.camera_offsets then
+					set(self.dadCam, "x", json.dad.camera_offsets[1])
+					set(self.dadCam, "y", json.dad.camera_offsets[2])
+				end
 			end
 
 			set(self, "camZoom", json.camera_zoom)
@@ -87,6 +99,12 @@ function Stage:makeSpriteFromData(data)
 	if data.scroll then
 		spr:setScrollFactor(data.scroll[1] or 1, data.scroll[2] or 2)
 	end
+	if data.props then
+		for prop, val in ipairs(data.props) do
+			spr[prop] = val
+		end
+	end
+
 	self.script:set(data.name, spr)
 
 	return spr

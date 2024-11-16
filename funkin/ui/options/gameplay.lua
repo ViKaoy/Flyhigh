@@ -17,6 +17,7 @@ local data = {
 	{"downScroll",    "Down scroll",     "boolean"},
 	{"middleScroll",  "Middle scroll",   "boolean"},
 	{"ghostTap",      "Ghost tap",       "boolean"},
+	{"complexAccuracy", "Complex accuracy", "boolean"},
 	{"noteSplash",    "Note splash",     "boolean"},
 	{"botplayMode",   "Botplay",         "boolean"},
 	{"playback", "Playback", "number", function(add)
@@ -24,7 +25,6 @@ local data = {
 		ClientPrefs.data.playback = value
 	end, function(value) return "x" .. value end},
 	-- {"timeType",      "Song time type",      "string", {"left", "elapsed"}},
-	{"gameOverInfos", "Show game over info", "boolean"},
 
 	{"AUDIO"},
 	{"pauseMusic",    "Pause music",         "string", {"railways", "breakfast"}},
@@ -51,13 +51,7 @@ local data = {
 		local value = math.clamp(ClientPrefs.data.vocalVolume + add, 0, 100)
 		ClientPrefs.data.vocalVolume = value
 	end, percentvalue},
-	{"songOffset", "Song offset", "number"},
-	{"calibration", "Calibrate", function(optionsUI)
-		if optionsUI.aboutToGoToCalibration then return end
-		util.playSfx(paths.getSound('scrollMenu'))
-		optionsUI.aboutToGoToCalibration = true
-		optionsUI.changingOption = false
-	end}
+	{"songOffset", "Song offset", "number"}
 }
 
 local Gameplay = Settings:base("Gameplay", data)

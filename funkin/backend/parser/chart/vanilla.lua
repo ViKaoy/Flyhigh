@@ -1,4 +1,4 @@
-local vanilla = {}
+local vanilla = {name = "Vanilla/Psych"}
 
 local function set(tbl, key, v) if v ~= nil then tbl[key] = v end end
 
@@ -19,14 +19,15 @@ local function compareInsert(noteList, newNote)
 	table.insert(noteList, newNote)
 end
 
-local function getStuff(data, eventData)
+local function getStuff(data, eventData, bpm)
 	local dad, bf, events, bpmChanges =
 		{}, {}, {}, Conductor.newBPMChanges(bpm)
 
 	local time, steps, total, add, focus, lastFocus = 0, 0, 0
 
 	if eventData then
-		for _, e in ipairs(eventData.song.events) do
+		local edata = eventData.events or eventData
+		for _, e in ipairs(edata) do
 			local etime = e[1]
 			for _, i in ipairs(e[2]) do
 				local eevent = i[1]
@@ -45,8 +46,6 @@ local function getStuff(data, eventData)
 	for _, s in ipairs(data) do
 		if s and s.sectionNotes then
 			for _, n in ipairs(s.sectionNotes) do
-				if column == -1 then return end -- psych old event system
-
 				local kind = n[4]
 				local column, gf = n[2], kind == "gf"
 				local hit = s.mustHitSection
@@ -148,10 +147,8 @@ function vanilla.parse(data, eventData, meta)
 
 	if realData.notes then
 		chart.notes, chart.events, chart.bpmChanges =
-			API.chart.readDiff(chart.bpm, realData.notes, true)
+			getStuff(realData.notes, eventData or realData.events, chart.bpm)
 	end
-
-	print("Parsed " .. chart.song .. " as Vanilla chart")
 
 	return chart
 end

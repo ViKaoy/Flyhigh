@@ -2,6 +2,58 @@ local HealthIcon = Sprite:extend("HealthIcon")
 
 HealthIcon.defaultIcon = "face"
 
+function HealthIcon.getDominant(icon)
+	local fullpath = paths.getPath("images/icons/" .. icon) .. ".png"
+	if not paths.exists(fullpath, "file") or not icon then
+		fullpath = paths.getPath("images/icons/" .. HealthIcon.defaultIcon) .. ".png"
+	end
+
+	local dominant = {}
+	local imgData = love.image.newImageData(fullpath)
+
+	local function is_close(r, g, b, th)
+		return r <= th and g <= th and b <= th
+	end
+
+	local width, height = imgData:getDimensions()
+	local th = 0.1
+
+	for y = 1, height - 1 do
+		for x = 1, width - 1 do
+			local r, g, b, a = imgData:getPixel(x, y)
+			if a == 1 and not is_close(r, g, b, th) then
+				local color = {r, g, b}
+				table.insert(dominant, color)
+			end
+		end
+	end
+
+	local freq = {}
+	for _, color in ipairs(dominant) do
+		local string = table.concat({color[1], color[2], color[3]}, ",")
+		freq[string] = (freq[string] or 0) + 1
+	end
+
+	local result, max = nil, 0
+	for string, frequency in pairs(freq) do
+		if frequency > max then
+			result = string
+			max = frequency
+		end
+	end
+
+	if result then
+		local colortable = {}
+		for value in string.gmatch(result, "([^,]+)") do
+			table.insert(colortable, tonumber(value))
+		end
+		imgData:release()
+
+		return colortable
+	end
+	imgData:release()
+end
+
 function HealthIcon:new(icon, isPlayer, health)
 	HealthIcon.super.new(self)
 
@@ -10,6 +62,7 @@ function HealthIcon:new(icon, isPlayer, health)
 	self.flipX = self.isPlayer
 	self.sprTracker = nil
 	self:changeIcon(icon)
+	self:updateAnimation()
 end
 
 function HealthIcon:updateAnimation()

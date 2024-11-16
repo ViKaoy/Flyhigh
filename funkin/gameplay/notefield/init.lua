@@ -5,20 +5,21 @@ Note = require "funkin.gameplay.notefield.note"
 local Notefield = ActorGroup:extend("Notefield")
 
 Notefield.ratings = {
-	-- { name = "perfect", time = 0.0125, splash = true,  mod = 1},
-	{ name = "sick", time = 0.045, splash = true,  mod = 1   },
-	{ name = "good", time = 0.090, splash = false, mod = 0.7 },
-	{ name = "bad",  time = 0.135, splash = false, mod = 0.4 },
-	{ name = "shit", time = -1,    splash = false, mod = 0.2 }
+	-- { name = "perfect", ms = 12.5, mod = 1, splash = true},
+	{ name = "sick", ms = 45,  mod = 1, splash = true },
+	{ name = "good", ms = 90,  mod = 0.7 },
+	{ name = "bad",  ms = 135, mod = 0.4 },
+	{ name = "shit", ms = -1,  mod = 0.2 }
 }
 
 Notefield.ranks = {
 	{ name = "FC",    cond = function(s) return s.misses < 1 and (s.bads > 0 or s.shits > 0) end },
 	{ name = "GFC",   cond = function(s) return s.misses < 1 and s.goods > 0 end },
 	{ name = "SFC",   cond = function(s) return s.misses < 1 and s.sicks > 0 end },
+	-- { name = "PFC",   cond = function(s) return s.misses < 1 and s.perfects > 0 end },
 	{ name = "FC",    cond = function(s) return s.misses < 1 end },
-	{ name = "SDM",   cond = function(s) return s.misses > 0 end },
-	{ name = "Clear", cond = function(s) return s.misses >= 10 end }
+	{ name = "Clear", cond = function(s) return s.misses >= 10 end },
+	{ name = "SDM",   cond = function(s) return s.misses > 0 end }
 }
 
 Notefield.safeZoneOffset = 1 / 6
@@ -32,55 +33,32 @@ Notefield.missScore = -150
 function Notefield:new(x, y, keys, skin, character, vocals, speed, parent)
 	Notefield.super.new(self, x, y)
 
-	self.noteWidth = 160 * 0.7
-	self.height = 514
-	self.keys = keys
-	self.skin = paths.getSkin(skin)
+	self.noteWidth, self.height = 160 * 0.7, 514
+	self.keys, self.skin, self.bgAlpha = keys, paths.getSkin(skin), 0
+	self.time, self.offsetTime, self.beat = 0, 0, 0
+	self.drawSize, self.drawSizeOffset = game.height * 2 + self.noteWidth, 0
 
-	self.time = 0
-	self.beat = 0
-	self.offsetTime = 0
-	self.speed = speed or 1
-	self.drawSize = game.height * 2 + self.noteWidth
-	self.drawSizeOffset = 0
-	self.downscroll = false
-	self.canSpawnSplash = true
-	self.lastSustain = nil
-
-	self.character = character
-	self.vocals = vocals
-	self.bot = true
-
-	self.score = 0
-	self.combo = 0
-	self.misses = 0
+	self.downscroll, self.bot, self.speed = false, true, speed or 1
+	self.canSpawnSplash, self.lastSustain = true
+	self.character, self.vocals = character, vocals
+	self.score, self.combo, self.misses = 0, 0, 0
 
 	for _, r in ipairs(Notefield.ratings) do
 		self[r.name .. "s"] = 0
 	end
-	self.totalPlayed = 0
-	self.totalHit = 0
-	self.totalExactHit = 0
-	self.accuracy = "0%"
-	self.complexAccuracy = "0%"
-	self.rank = "NR" -- no rank
+	self.totalPlayed, self.totalHit, self.totalExactHit = 0, 0, 0
+	self.accuracy, self.complexAccuracy, self.rank = "0%", "0%", "NR" -- no rank
 
-	self.modifiers = {}
-	self.lanes = {}
-	self.receptors = {}
-	self.notes = {}
-	self.recentPresses = {}
+	self.modifiers, self.recentPresses = {}, {}
+	self.lanes, self.receptors, self.notes, self.overlays = {}, {}, {}, Group()
 
-	self.onNoteHit = Signal()
-	self.onSustainHit = Signal()
-	self.onNoteMiss = Signal()
-	self.onNoteMash = Signal()
+	self.onNoteHit, self.onSustainHit, self.onNoteMiss, self.onNoteMash =
+		Signal(), Signal(), Signal(), Signal()
 
-	self.__topSprites = Group()
-	self.__offsetX = -self.noteWidth / 2 - (self.noteWidth * keys / 2)
-	for i = 1, keys do self:makeLane(i).x = self.__offsetX + self.noteWidth * i end
-	self.__offsetX = self.__offsetX / (1 + 1 / keys)
-	self:add(self.__topSprites)
+	self.offsetX = -self.noteWidth / 2 - (self.noteWidth * keys / 2)
+	for i = 1, keys do self:makeLane(i).x = self.offsetX + self.noteWidth * i end
+	self.offsetX = self.offsetX / (1 + 1 / keys)
+	self:add(self.overlays)
 
 	self:getWidth()
 
@@ -93,23 +71,6 @@ function Notefield:new(x, y, keys, skin, character, vocals, speed, parent)
 		self.onNoteMash:add(function()
 			if parent.health then parent.health = parent.health - 0.09 end
 		end)
-	end
-end
-
-function Notefield:fadeInReceptors()
-	local tween = self.parent and (function(...)
-		self.parent.tween:tween(...)
-	end) or Tween.tween
-
-	for i = 1, #self.lanes do
-		local receptor = self.lanes[i].receptor
-		receptor.y = receptor.y - 10
-		receptor.alpha = 0
-
-		tween(receptor, {y = receptor.y + 10, alpha = 1}, 1, {
-			ease = "circOut",
-			startDelay = (0.2 * i)
-		})
 	end
 end
 
@@ -128,8 +89,8 @@ function Notefield:makeLane(direction, y)
 	self.receptors[direction] = lane.receptor
 	self.lanes[direction] = lane
 	self:add(lane)
-	self.__topSprites:add(lane.receptor.covers)
-	self.__topSprites:add(lane.receptor.splashes)
+	self.overlays:add(lane.receptor.covers)
+	self.overlays:add(lane.receptor.splashes)
 	return lane
 end
 
@@ -199,20 +160,6 @@ function Notefield:removeNote(note)
 	end
 end
 
-function Notefield:setSkin(skin)
-	if self.skin.skin == skin then return end
-
-	skin = skin and paths.getSkin(skin) or paths.getSkin("default")
-	self.skin = skin
-
-	for _, receptor in ipairs(self.receptors) do
-		receptor:setSkin(skin)
-	end
-	for _, note in ipairs(self.notes) do
-		note:setSkin(skin)
-	end
-end
-
 function Notefield:setNotes(noteTable)
 	for _, n in ipairs(noteTable) do
 		local sustainTime = n.l or 0
@@ -260,6 +207,37 @@ function Notefield:getNotes(time, direction, sustainLoop)
 	return hitNotes, hasSustain
 end
 
+function Notefield:fadeInReceptors()
+	local tween = self.parent and (function(...)
+		self.parent.tween:tween(...)
+	end) or Tween.tween
+
+	for i = 1, #self.lanes do
+		local receptor = self.lanes[i].receptor
+		receptor.y = receptor.y - 10
+		receptor.alpha = 0
+
+		tween(receptor, {y = receptor.y + 10, alpha = 1}, 1, {
+			ease = "circOut",
+			startDelay = (0.2 * i)
+		})
+	end
+end
+
+function Notefield:setSkin(skin)
+	if self.skin.skin == skin then return end
+
+	skin = skin and paths.getSkin(skin) or paths.getSkin("default")
+	self.skin = skin
+
+	for _, receptor in ipairs(self.receptors) do
+		receptor:setSkin(skin)
+	end
+	for _, note in ipairs(self.notes) do
+		note:setSkin(skin)
+	end
+end
+
 function Notefield:getRank()
 	for _, rank in ipairs(self.ranks) do
 		if rank.cond(self) then return rank.name end
@@ -277,23 +255,34 @@ function Notefield:updateAccuracy()
 	self.complexAccuracy = math.truncate(self:getAccuracy(true) * 100, 2) .. "%"
 end
 
-function Notefield:getExactAccuracy(noteTime, hitTime)
-	local diff = math.abs(noteTime - hitTime)
+function Notefield:getExactAccuracy(a, b)
+	local diff = math.abs(a - b)
 	return math.max(0, 1 - (diff / self.safeZoneOffset))
 end
 
 function Notefield:getRating(a, b)
-	local diff = math.abs(a - b)
+	local diff = math.abs(a - b) * 1000
 	for _, r in ipairs(self.ratings) do
-		if diff <= (r.time < 0 and self.safeZoneOffset or r.time) then return r end
+		if diff <= (r.ms < 0 and self.safeZoneOffset or r.ms) then
+			return r
+		else
+			if r.ms < 0 then
+				return r
+			end
+		end
 	end
-	return self.ratings[4]
 end
 
 function Notefield:update(dt)
 	Notefield.super.update(self, dt)
 
-	local time = PlayState.conductor.time / 1000
+	for _, lane in ipairs(self.lanes) do
+		for _, note in ipairs(lane.renderedNotes) do
+			note:update(dt)
+		end
+	end
+
+	local time = (PlayState.conductor.time - ClientPrefs.data.songOffset) / 1000
 	local missOffset = time - self.safeZoneOffset / 1.25
 
 	if PlayState.conductor.time < 0 or game.sound.music:isPlaying() then
@@ -413,7 +402,11 @@ function Notefield:hitNote(note)
 	local timing = self:getExactAccuracy(note.time, time)
 
 	self.totalPlayed, self.totalHit = self.totalPlayed + 1, self.totalHit + rating.mod
-	self.totalExactHit = self.totalExactHit + timing
+
+	-- notes hit within 5ms early or late should give 1, otherwise timing based
+	local ms = math.floor((time - note.time) * 1000)
+	self.totalExactHit = self.totalExactHit + (math.abs(ms) <= 5 and 1 or timing)
+
 	self:updateAccuracy()
 
 	local score = math.floor(self.hitScore * timing)
@@ -424,9 +417,8 @@ function Notefield:hitNote(note)
 
 	note.lastPress = time
 
-	self.onNoteHit:dispatch(note, rating, math.round((time - note.time) * 1000))
+	self.onNoteHit:dispatch(note, rating, ms)
 end
-
 
 function Notefield:hitSustain(note, full)
 	local time, stime = self.time, note.sustainTime
@@ -466,8 +458,7 @@ end
 function Notefield:resetStroke(dir, doPress)
 	local receptor = self.receptors[dir]
 	if receptor then
-		receptor:play((doPress and not self.bot)
-			and "pressed" or "static")
+		receptor:play(doPress and "pressed" or "static")
 	end
 end
 
@@ -590,6 +581,20 @@ function Notefield:__prepareLane(direction, lane, time)
 end
 
 function Notefield:__render(camera)
+	if self.bgAlpha > 0 then
+		-- this FOR SURE wont work with modcharts but whatever!
+		local x, y, ox, oy, w, h = self.x, self.y - self.drawSize / 2, self.origin.x, self.origin.y,
+			self.width, self.drawSize
+
+		x, y = x + ox - self.offset.x - (camera.scroll.x * self.scrollFactor.x),
+			y + oy - self.offset.y - (camera.scroll.y * self.scrollFactor.y)
+
+		love.graphics.push("all")
+		love.graphics.setColor(0, 0, 0, self.bgAlpha)
+		love.graphics.rectangle("fill", x, y, w, h)
+		love.graphics.pop()
+	end
+
 	local time = self.time - self.offsetTime
 	for i, lane in ipairs(self.lanes) do
 		self:__prepareLane(i - 1, lane, time)
@@ -597,9 +602,9 @@ function Notefield:__render(camera)
 
 	for _, mod in pairs(self.modifiers) do if mod.apply then mod:apply(self) end end
 	if self.downscroll then self.scale.y = -self.scale.y end
-	self.x = self.x - self.__offsetX
+	self.x = self.x - self.offsetX
 	Notefield.super.__render(self, camera)
-	self.x = self.x + self.__offsetX
+	self.x = self.x + self.offsetX
 	if self.downscroll then self.scale.y = -self.scale.y end
 	NoteModifier.discard()
 

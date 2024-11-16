@@ -271,7 +271,7 @@ function Note:__render(camera)
 		self.x, self.y, self.z = nx, ny + pos, nz
 	end
 
-	local v, almult = values.size, self.tooLate and .5 or (self.isGhost and .6 or 1)
+	local v, almult = values.size, self.tooLate and .5 or (self.isGhost and .64 or 1)
 	rot.x, rot.y, rot.z = rot.x + values.rotX, rot.y + values.rotY, rot.z + values.rotZ
 	sc.x, sc.y, sc.z = sc.x * values.sizeX * v, sc.y * values.sizeY * v, sc.z * values.sizeZ * v
 	self.alpha = pal * values.alpha * almult

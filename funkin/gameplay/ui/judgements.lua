@@ -8,6 +8,7 @@ function Judgements:new(x, y, skin)
 	self.comboNumVisible = true
 
 	self.msGroup = SpriteGroup()
+	self:add(self.msGroup)
 
 	self.skin = skin or "default"
 	self.antialiasing = not skin:endsWith("-pixel")
@@ -53,7 +54,7 @@ function Judgements:createSprite(name, scale, duration)
 	return sprite
 end
 
-function Judgements:spawn(rating, combo)
+function Judgements:spawn(rating, combo, timing)
 	if not self.visible then return end
 
 	local accel = PlayState.conductor.crotchet * 0.001
@@ -70,6 +71,7 @@ function Judgements:spawn(rating, combo)
 		ratingSpr.visible = self.ratingVisible
 	end
 
+	local lastComboX = 0
 	if combo and self.comboNumVisible and (combo > 9 or combo < 0) then
 		combo = string.format(combo < 0 and "-%03d" or "%03d", math.abs(combo))
 		local l, x, char, comboNum = #combo, 38
@@ -81,6 +83,58 @@ function Judgements:spawn(rating, combo)
 				x, self.area.height - comboNum.height
 			comboNum.acceleration.y, comboNum.velocity.x, comboNum.velocity.y = math.random(200, 300),
 				math.random(-5.0, 5.0), comboNum.velocity.y - math.random(140, 160)
+		end
+
+		lastComboX = x
+	end
+
+	if timing then
+		local char, x = nil, 0
+		for i = #self.msGroup.members, 1, -1 do
+			local spr = self.msGroup.members[i]
+			spr:destroy()
+			if spr._timer then spr._timer:cancel(); spr._timer = nil end
+			if spr._tween then spr._tween:cancel(); spr._tween = nil end
+			self.msGroup:remove(spr)
+			spr = nil
+		end
+	
+		self.msGroup.color = Color.fromHEX(0xC1CAFF)
+		if timing > 0 then
+			self.msGroup.color = Color.fromHEX(0xFF8D63)
+		end
+		self.msGroup.x = lastComboX + 30
+
+		timing = tostring(timing)
+		for i = 1, #timing + 1 do
+			local c = timing:sub(i, i)
+			if c ~= "-" then
+				char = i == #timing + 1 and "ms" or "num" .. c
+
+				local spr = Sprite()
+				spr.velocity.x = 0
+				spr.velocity.y = 0
+				spr.acceleration.y = 0
+				spr.moves = false
+				spr.alpha = 1
+
+				spr:loadTexture(paths.getImage("skins/" .. self.skin .. "/" .. char))
+				spr:setGraphicSize(math.floor(spr.width * 0.4))
+				spr:updateHitbox()
+				spr.moves = true
+				spr.acceleration.y = 300
+				spr.velocity.y = - math.random(140, 170)
+				spr.velocity.x = - math.random(-6, 4)
+				x, spr.x, spr.y = x + spr.width, x, self.area.height - spr.height
+
+				local state = game.getState()
+				if spr._timer then spr._timer:cancel(); spr._timer = nil end
+				spr._timer = Timer(state.timer):start(0.5, function()
+					spr._tween = Tween.tween(spr, {alpha = 0}, 0.2, {
+						onComplete = function() spr:kill() end
+				}) end)
+				self.msGroup:add(spr)
+			end
 		end
 	end
 end

@@ -11,16 +11,16 @@ function Parser.getChart(songName, diff)
 	local data, path = chart.get(songName, diff and diff:lower() or "normal")
 
 	if data then
+		local parser = chart.getParser(data)
 		local parsed =
-			chart.getParser(data).parse(data, paths.getJSON(path .. "events")
-			or (data.song and data.song.events or data.events),
-			paths.getJSON(path .. "meta") or paths.getJSON(path .. "metadata"),
-			diff)
+			parser.parse(data, paths.getJSON(path .. "events"),
+			paths.getJSON(path .. "meta"), diff)
 
 		table.sort(parsed.notes.enemy, sortByTime)
 		table.sort(parsed.notes.player, sortByTime)
 		table.sort(parsed.events, sortByTime)
 
+		print("[CHART PARSER] Parsed \"" .. parsed.song .. "\" as " .. parser.name or "unknown")
 		return parsed
 	else
 		return table.clone(chart.base)

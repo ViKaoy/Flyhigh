@@ -241,6 +241,7 @@ function Receptor:update(dt)
 					if anim == "start" then
 						cover:play("loop")
 						cover:updateHitbox()
+						cover.x, cover.y, cover.z = self._x - cover.width / 2, self._y - cover.height / 2 - 4, self._z
 					elseif anim == "end" then
 						cover:kill()
 					end

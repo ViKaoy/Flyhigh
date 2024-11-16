@@ -1,0 +1,3 @@
+local Language = {}
+
+return Language

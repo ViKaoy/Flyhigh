@@ -40,11 +40,7 @@ end
 
 Notefield = require "funkin.gameplay.notefield"
 
-Countdown = require "funkin.gameplay.ui.countdown"
-HealthIcon = require "funkin.gameplay.ui.healthicon"
-HealthBar = require "funkin.gameplay.ui.healthbar"
-ProgressArc = require "funkin.gameplay.ui.progressarc"
-Judgements = require "funkin.gameplay.ui.judgements"
+require "funkin.gameplay.ui"
 
 Character = require "funkin.gameplay.character"
 Stage = require "funkin.gameplay.stage"
@@ -137,7 +133,10 @@ function funkin.setup()
 		end
 	end
 
-	game.statsCounter = StatsCounter(18, 18,
+	local w = love.graphics.getDimensions()
+	local x = w / game.width
+
+	game.statsCounter = StatsCounter(18 * x, 18,
 		love.graphics.newFont('assets/fonts/consolas.ttf', 14),
 		love.graphics.newFont('assets/fonts/consolas.ttf', 18))
 	game.statsCounter.showFps = ClientPrefs.data.showFps
@@ -165,6 +164,9 @@ end
 
 function funkin.fullscreen(f)
 	ClientPrefs.data.fullscreen = f
+	local w = love.graphics.getDimensions()
+	local x = w / game.width
+	game.statsCounter.x = 18 * x
 end
 
 function funkin.quit()

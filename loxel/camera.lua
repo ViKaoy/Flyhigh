@@ -237,7 +237,7 @@ end
 function Camera:canDraw()
 	self:getZoomXY()
 
-	return self.visible and self.exists and (
+	return self.bgColor[4] > 0 or self.visible and self.exists and (
 			self.freezed or next(self.__renderQueue)
 			or self.__flashAlpha > 0 or self.__fadeDuration > 0
 		) and

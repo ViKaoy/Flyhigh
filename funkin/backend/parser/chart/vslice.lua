@@ -1,4 +1,4 @@
-local vslice = {}
+local vslice = {name = "V-Slice"}
 
 local function set(tbl, key, v) if v ~= nil then tbl[key] = v end end
 
@@ -33,7 +33,7 @@ local function getStuff(data)
 	return {enemy = dad, player = bf}
 end
 
-function vslice.parse(data, events, meta, diff)
+function vslice.parse(data, _, meta, diff)
 	local chart = table.clone(vslice.base)
 
 	if meta then vslice.getFromMeta(meta, chart) end
@@ -67,8 +67,6 @@ function vslice.parse(data, events, meta, diff)
 			getStuff(data.notes[diff:lower()]), data.events
 	end
 
-	print("Parsed " .. chart.song .. " as VSlice chart")
-
 	return chart
 end
 
@@ -79,7 +77,6 @@ function vslice.getFromMeta(meta, tbl)
 	if data then
 		local info = data.playData or data
 		set(tbl, "song", data.songName or data.song)
-		print(tbl.song or "no name")
 		set(tbl, "stage", info.stage)
 		set(tbl, "skin", info.skin)
 

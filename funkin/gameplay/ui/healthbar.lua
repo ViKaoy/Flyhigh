@@ -1,4 +1,5 @@
 local HealthBar = SpriteGroup:extend("HealthBar")
+HealthBar.automaticColor = true
 
 function HealthBar:new(bfData, dadData, skin)
 	HealthBar.super.new(self, 0, 0)
@@ -25,14 +26,21 @@ function HealthBar:new(bfData, dadData, skin)
 	self.iconP1.y = self.bar.y - 75
 	self.iconP2.y = self.bar.y - 75
 
-	self.bar.color = Color.fromHEX(0x66FF33)
-	self.bar.color.bg = Color.fromHEX(0xFF0000)
+	self.bar.color = self.automaticColor and HealthIcon.getDominant(bfData.icon)
+		or bfData.healthColor or Color.fromHEX(0x66FF33)
+	self.bar.color.bg = self.automaticColor and HealthIcon.getDominant(dadData.icon)
+		or dadData.healthColor or Color.fromHEX(0xFF0000)
 
 	self:add(self.iconP1)
 	self:add(self.iconP2)
 
 	self.value = 1
 	self.bar:setValue(1)
+end
+
+function HealthBar:setColors(player, enemy)
+	if player then self.bar.color = player end
+	if enemy then self.bar.color.bg = enemy end
 end
 
 local iconOffset = 26

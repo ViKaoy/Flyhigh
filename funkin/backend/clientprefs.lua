@@ -14,7 +14,7 @@ ClientPrefs.data = {
 	flashingLights = true,
 	botplayMode = false,
 	playback = 1,
-	gameOverInfos = true,
+	complexAccuracy = true,
 
 	-- audio
 	pauseMusic = "railways",
