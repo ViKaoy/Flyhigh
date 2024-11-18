@@ -346,25 +346,16 @@ function Notefield:keyPress(key, time)
 	local l = #hitNotes
 
 	if ClientPrefs.data.ghostTap and l > 0 then
-		table.insert(self.recentPresses, {key = key, time = time, hit = true})
-
 		for i = #self.recentPresses, 1, -1 do
-			if time - self.recentPresses[i].time > 0.1 then
+			if time - self.recentPresses[i] > 0.12 then
 				table.remove(self.recentPresses, i)
 			end
 		end
-
-		for _, press in ipairs(self.recentPresses) do
-			if press.key ~= key and math.abs(press.time - time) < 0.1 and
-				#self.recentPresses > 2 then
-				if not press.hit then
-					-- print("antimash triggered")
-					self.onNoteMash:dispatch()
-				end
-			end
+		for _ = 1, #self.recentPresses do
+			self.onNoteMash:dispatch()
 		end
 	elseif ClientPrefs.data.ghostTap then
-		table.insert(self.recentPresses, {key = key, time = time, hit = false})
+		table.insert(self.recentPresses, time)
 	end
 
 	if l == 0 then
