@@ -1,3 +1,6 @@
+# !! DEPRECATED
+A Add-on is on development.
+
 # ![](art/icon.png) Flyhigh
 
 ![](art/fh_logo.png)
